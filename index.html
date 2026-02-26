@@ -2,29 +2,30 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Torneo</title>
 
 <style>
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 body {
   margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg, #1e1e2f, #111);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(180deg, #1a1a2e, #111);
   color: white;
   text-align: center;
 }
 
 h1 {
-  margin: 20px 0 10px 0;
+  margin: 20px 0 10px;
+  font-size: 22px;
 }
 
 .progress {
-  width: 80%;
-  height: 8px;
+  width: 85%;
+  height: 6px;
   background: #333;
-  margin: 10px auto 20px auto;
+  margin: 10px auto 20px;
   border-radius: 10px;
   overflow: hidden;
 }
@@ -38,49 +39,59 @@ h1 {
 
 .container {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
+  flex-direction: column;
+  gap: 20px;
+  padding: 15px;
 }
 
 .card {
-  width: 42%;
-  cursor: pointer;
-  border-radius: 20px;
+  width: 100%;
+  border-radius: 22px;
   overflow: hidden;
-  background: #1c1c2b;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-  transition: transform 0.2s, opacity 0.3s;
+  background: #1f1f35;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+  transition: transform 0.15s, opacity 0.3s;
+  cursor: pointer;
 }
 
-.card:hover { transform: scale(1.05); }
+.card:active {
+  transform: scale(0.97);
+}
 
 .card img {
   width: 100%;
-  height: 180px;
+  height: 220px;
   object-fit: cover;
 }
 
 .card h3 {
-  padding: 10px;
   margin: 0;
+  padding: 15px;
+  font-size: 18px;
 }
 
 .vs {
-  font-size: 20px;
   font-weight: bold;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
-.fade { opacity: 0.3; }
+.fade {
+  opacity: 0.3;
+}
+
+.podium {
+  margin-top: 30px;
+}
+
+.podium h2 {
+  margin: 12px 0;
+}
 
 button {
-  padding: 12px 25px;
+  padding: 14px 30px;
   font-size: 16px;
   border: none;
-  border-radius: 30px;
-  cursor: pointer;
+  border-radius: 40px;
   background: linear-gradient(90deg, #00f5a0, #00d9f5);
   color: black;
   font-weight: bold;
@@ -91,7 +102,7 @@ button {
 
 <body>
 
-<h1>🏆 Torneo</h1>
+<h1>🏆 Scegli il tuo vincitore</h1>
 
 <div class="progress">
   <div class="progress-bar" id="progressBar"></div>
@@ -102,7 +113,7 @@ button {
 
 <script>
 
-// ----- PERSONALIZZA QUI -----
+// -------- PERSONALIZZA QUI --------
 let items = [
   {name: "Pizza", img: "https://source.unsplash.com/600x600/?pizza"},
   {name: "Sushi", img: "https://source.unsplash.com/600x600/?sushi"},
@@ -113,13 +124,15 @@ let items = [
   {name: "Estate", img: "https://source.unsplash.com/600x600/?summer"},
   {name: "Inverno", img: "https://source.unsplash.com/600x600/?winter"}
 ];
-// ----------------------------
+// -----------------------------------
 
 let bracket = [];
 let currentMatch = 0;
 let winners = [];
 let semifinalLosers = [];
 let finalistLoser = null;
+let totalMatches = items.length - 1;
+let completedMatches = 0;
 
 function shuffle(array) {
   return array.sort(() => Math.random() - 0.5);
@@ -177,29 +190,36 @@ function showMatch() {
 
 function choose(index) {
 
-  let match = bracket[currentMatch];
-  let winner = match[index];
-  let loser = match[1 - index];
+  let cards = document.querySelectorAll(".card");
+  cards.forEach((c,i) => {
+    if (i !== index) c.classList.add("fade");
+  });
 
-  if (bracket.length === 2) {
-    semifinalLosers.push(loser);
-  }
+  setTimeout(() => {
 
-  if (bracket.length === 1) {
-    finalistLoser = loser;
-  }
+    let match = bracket[currentMatch];
+    let winner = match[index];
+    let loser = match[1 - index];
 
-  winners.push(winner);
-  currentMatch++;
+    if (bracket.length === 2) {
+      semifinalLosers.push(loser);
+    }
 
-  updateProgress();
-  showMatch();
+    if (bracket.length === 1) {
+      finalistLoser = loser;
+    }
+
+    winners.push(winner);
+    currentMatch++;
+    completedMatches++;
+    updateProgress();
+    showMatch();
+
+  }, 250);
 }
 
 function updateProgress() {
-  let total = items.length - 1;
-  let done = winners.length + currentMatch;
-  let percent = (done / total) * 100;
+  let percent = (completedMatches / totalMatches) * 100;
   document.getElementById("progressBar").style.width = percent + "%";
 }
 
@@ -208,10 +228,12 @@ function showPodium(first) {
   document.getElementById("game").innerHTML = "";
 
   document.getElementById("result").innerHTML = `
-    <h2>🥇 ${first.name}</h2>
-    <h3>🥈 ${finalistLoser ? finalistLoser.name : ""}</h3>
-    <h3>🥉 ${semifinalLosers[0] ? semifinalLosers[0].name : ""}</h3>
-    <button onclick="location.reload()">Rigioca</button>
+    <div class="podium">
+      <h2>🥇 ${first.name}</h2>
+      <h2>🥈 ${finalistLoser ? finalistLoser.name : ""}</h2>
+      <h2>🥉 ${semifinalLosers[0] ? semifinalLosers[0].name : ""}</h2>
+      <button onclick="location.reload()">Rigioca</button>
+    </div>
   `;
 }
 
