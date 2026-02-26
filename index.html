@@ -4,68 +4,144 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Torneo</title>
+
 <style>
+* { box-sizing: border-box; }
+
 body {
-  font-family: Arial, sans-serif;
-  text-align: center;
-  background: #111;
-  color: white;
   margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #1e1e2f, #111);
+  color: white;
+  text-align: center;
 }
-h1 { margin-top: 20px; }
+
+h1 {
+  margin: 20px 0 10px 0;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.progress {
+  width: 80%;
+  height: 8px;
+  background: #333;
+  margin: 10px auto 20px auto;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #00f5a0, #00d9f5);
+  transition: width 0.3s;
+}
+
 .container {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 20px;
-  margin-top: 30px;
+  gap: 10px;
+  padding: 10px;
 }
+
 .card {
-  width: 40%;
+  width: 42%;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s, opacity 0.3s;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #1c1c2b;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.5);
 }
+
 .card:hover {
   transform: scale(1.05);
 }
-img {
+
+.card img {
   width: 100%;
-  border-radius: 15px;
+  height: 180px;
+  object-fit: cover;
 }
-#result { margin-top: 30px; }
+
+.card h3 {
+  padding: 10px;
+  margin: 0;
+}
+
+.vs {
+  font-size: 20px;
+  font-weight: bold;
+  opacity: 0.6;
+}
+
+.fade-out {
+  opacity: 0.3;
+  transform: scale(0.95);
+}
+
+#result {
+  margin-top: 30px;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.podium h2 {
+  font-size: 22px;
+  margin: 10px 0;
+}
+
 button {
-  padding: 10px 20px;
-  font-size: 18px;
+  padding: 12px 25px;
+  font-size: 16px;
   border: none;
-  border-radius: 10px;
+  border-radius: 30px;
   cursor: pointer;
+  background: linear-gradient(90deg, #00f5a0, #00d9f5);
+  color: black;
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style>
 </head>
 
 <body>
 
-<h1>Torneo</h1>
+<h1>🏆 Torneo</h1>
+
+<div class="progress">
+  <div class="progress-bar" id="progressBar"></div>
+</div>
+
 <div id="game"></div>
 <div id="result"></div>
 
 <script>
 
 let items = [
-  {name: "Pizza", img: "https://source.unsplash.com/400x400/?pizza"},
-  {name: "Sushi", img: "https://source.unsplash.com/400x400/?sushi"},
-  {name: "Mare", img: "https://source.unsplash.com/400x400/?sea"},
-  {name: "Montagna", img: "https://source.unsplash.com/400x400/?mountain"},
-  {name: "Cinema", img: "https://source.unsplash.com/400x400/?cinema"},
-  {name: "Videogiochi", img: "https://source.unsplash.com/400x400/?gaming"},
-  {name: "Estate", img: "https://source.unsplash.com/400x400/?summer"},
-  {name: "Inverno", img: "https://source.unsplash.com/400x400/?winter"}
+  {name: "Pizza", img: "https://source.unsplash.com/600x600/?pizza"},
+  {name: "Sushi", img: "https://source.unsplash.com/600x600/?sushi"},
+  {name: "Mare", img: "https://source.unsplash.com/600x600/?sea"},
+  {name: "Montagna", img: "https://source.unsplash.com/600x600/?mountain"},
+  {name: "Cinema", img: "https://source.unsplash.com/600x600/?cinema"},
+  {name: "Videogiochi", img: "https://source.unsplash.com/600x600/?gaming"},
+  {name: "Estate", img: "https://source.unsplash.com/600x600/?summer"},
+  {name: "Inverno", img: "https://source.unsplash.com/600x600/?winter"}
 ];
 
+let totalMatches = items.length - 1;
+let matchCount = 0;
+
 let currentRound = [];
-let winners = [];
+let nextRound = [];
 let semifinalLosers = [];
-let secondPlace;
+let finalistLoser = null;
 
 function shuffle(array) {
   return array.sort(() => Math.random() - 0.5);
@@ -73,35 +149,44 @@ function shuffle(array) {
 
 function startTournament() {
   currentRound = shuffle([...items]);
-  nextMatch();
+  nextRound = [];
+  semifinalLosers = [];
+  finalistLoser = null;
+  matchCount = 0;
+  updateProgress();
+  showMatch();
 }
 
-function nextMatch() {
-  if (currentRound.length === 1) {
+function updateProgress() {
+  let percent = (matchCount / totalMatches) * 100;
+  document.getElementById("progressBar").style.width = percent + "%";
+}
+
+function showMatch() {
+
+  if (currentRound.length === 1 && nextRound.length === 0) {
     showPodium(currentRound[0]);
     return;
   }
 
-  if (currentRound.length === 2) {
-    semifinalLosers.push(null);
+  if (currentRound.length < 2) {
+    currentRound = nextRound;
+    nextRound = [];
+    showMatch();
+    return;
   }
 
   let a = currentRound.shift();
   let b = currentRound.shift();
 
-  if (!b) {
-    winners.push(a);
-    prepareNextRound();
-    return;
-  }
-
   document.getElementById("game").innerHTML = `
     <div class="container">
-      <div class="card" onclick="chooseWinner('${a.name}')">
+      <div class="card" onclick="choose('${a.name}', this)">
         <img src="${a.img}">
         <h3>${a.name}</h3>
       </div>
-      <div class="card" onclick="chooseWinner('${b.name}')">
+      <div class="vs">VS</div>
+      <div class="card" onclick="choose('${b.name}', this)">
         <img src="${b.img}">
         <h3>${b.name}</h3>
       </div>
@@ -111,42 +196,47 @@ function nextMatch() {
   window.currentPair = {a, b};
 }
 
-function chooseWinner(name) {
-  let winner = window.currentPair.a.name === name ? window.currentPair.a : window.currentPair.b;
-  let loser = window.currentPair.a.name === name ? window.currentPair.b : window.currentPair.a;
+function choose(name, element) {
 
-  if (currentRound.length === 0 && winners.length === 0) {
-    secondPlace = loser;
-  }
+  let cards = document.querySelectorAll(".card");
+  cards.forEach(c => {
+    if (c !== element) c.classList.add("fade-out");
+  });
 
-  if (currentRound.length === 0 && winners.length === 1) {
-    secondPlace = loser;
-  }
+  setTimeout(() => {
 
-  if (currentRound.length === 2) {
-    semifinalLosers.push(loser);
-  }
+    let {a, b} = window.currentPair;
+    let winner = a.name === name ? a : b;
+    let loser = a.name === name ? b : a;
 
-  winners.push(winner);
-  nextMatch();
-}
+    if (currentRound.length === 0 && nextRound.length === 0) {
+      finalistLoser = loser;
+    }
 
-function prepareNextRound() {
-  currentRound = winners;
-  winners = [];
-  nextMatch();
+    if (currentRound.length === 2) {
+      semifinalLosers.push(loser);
+    }
+
+    nextRound.push(winner);
+    matchCount++;
+    updateProgress();
+    showMatch();
+
+  }, 300);
 }
 
 function showPodium(first) {
+
   let third = semifinalLosers[0] || null;
 
   document.getElementById("game").innerHTML = "";
   document.getElementById("result").innerHTML = `
-    <h2>🏆 Vincitore: ${first.name}</h2>
-    <h3>🥈 Secondo: ${secondPlace ? secondPlace.name : ""}</h3>
-    <h3>🥉 Terzo: ${third ? third.name : ""}</h3>
-    <br>
-    <button onclick="location.reload()">Rigioca</button>
+    <div class="podium">
+      <h2>🥇 ${first.name}</h2>
+      <h2>🥈 ${finalistLoser ? finalistLoser.name : ""}</h2>
+      <h2>🥉 ${third ? third.name : ""}</h2>
+      <button onclick="location.reload()">Rigioca</button>
+    </div>
   `;
 }
 
